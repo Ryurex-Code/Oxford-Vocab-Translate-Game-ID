@@ -33,10 +33,8 @@ export async function POST(request: NextRequest) {
                 success: false,
                 error: 'Failed to record attempt'
             }, { status: 500 });
-        }
-
-        // Get current progress or create new one
-        let { data: progress, error: progressError } = await supabase
+        }        // Get current progress or create new one
+        const { data: progress, error: progressError } = await supabase
             .from('user_word_progress')
             .select('*')
             .eq('user_id', user_id)
