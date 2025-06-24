@@ -75,28 +75,21 @@ export default function VocabularyLearning() {
     }
 
     hasInitialized.current = true;
-    console.log('🚀 VocabularyLearning useEffect triggered');
-
-    // Check user authentication first
+    console.log('🚀 VocabularyLearning useEffect triggered');    // Check user authentication first
     const userData = localStorage.getItem('user');
-    let currentUser: UserProfile | null = null;
-    let currentIsGuest = false;
 
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
-        currentUser = parsedUser;
         setUser(parsedUser);
         setIsGuest(false);
       } catch (error) {
         console.error('Error parsing user data:', error);
-        currentIsGuest = true;
         setIsGuest(true);
       }
     } else {
-      currentIsGuest = true;
       setIsGuest(true);
-    }    // Don't fetch words immediately, wait for level selection
+    }// Don't fetch words immediately, wait for level selection
     setIsLoadingWords(false);
   }, []); // Empty dependency array - only run once on mount
 
