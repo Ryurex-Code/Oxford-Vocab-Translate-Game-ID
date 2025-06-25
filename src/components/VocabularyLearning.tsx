@@ -47,6 +47,7 @@ export default function VocabularyLearning() {
   const [selectedLevels, setSelectedLevels] = useState<string[]>(['all']);
   const [showLevelModal, setShowLevelModal] = useState(true);
   const [isGameStarted, setIsGameStarted] = useState(false);
+  const [enableSentenceTranslation, setEnableSentenceTranslation] = useState(false); // Default false to save API usage
 
   // State untuk data kata dari Supabase
   const [vocabularyWords, setVocabularyWords] = useState<VocabularyQuestion[]>([]);
@@ -341,21 +342,25 @@ export default function VocabularyLearning() {
       setTask1Status('');
       setIsSubmitted(false); // Reset submit state when question changes
 
-      // Then generate new content
-      generateSentence(currentQuestion.word);
+      // Always generate translation and definition for Task 1
       getMultipleTranslations(currentQuestion.word);
       generateDefinition(currentQuestion.word);
+
+      // Only generate sentence if Task 2 is enabled
+      if (enableSentenceTranslation) {
+        generateSentence(currentQuestion.word);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentQuestionIndex, vocabularyWords.length]); // Only depend on index and length to prevent infinite loops
+  }, [currentQuestionIndex, vocabularyWords.length, enableSentenceTranslation]); // Add enableSentenceTranslation dependency
 
-  // Generate translation when sentence changes
+  // Generate translation when sentence changes (only if Task 2 is enabled)
   useEffect(() => {
-    if (generatedSentence && generatedSentence !== 'Failed to generate sentence') {
+    if (enableSentenceTranslation && generatedSentence && generatedSentence !== 'Failed to generate sentence') {
       generateSentenceTranslation(generatedSentence);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generatedSentence]); // Remove generateSentenceTranslation to prevent infinite loop
+  }, [generatedSentence, enableSentenceTranslation]); // Add enableSentenceTranslation dependency
 
   // Function to calculate Levenshtein Distance
   const calculateLevenshteinDistance = (str1: string, str2: string): number => {
@@ -477,11 +482,16 @@ export default function VocabularyLearning() {
             definition: ''
           }));
           setVocabularyWords(prev => [...prev, ...newWordsWithLLMFields]);
+          // nextIndex tetap sama (akan menunjuk ke kata pertama dari batch baru)
+        } else {
+          // Jika gagal mengambil kata baru, kembali ke awal
+          nextIndex = 0;
         }
       } catch (error) {
         console.error('Error fetching more words:', error);
+        // Jika error, kembali ke awal
+        nextIndex = 0;
       }
-      nextIndex = nextIndex < vocabularyWords.length ? nextIndex : 0;
     }    // Reset all states
     setCurrentQuestionIndex(nextIndex);
     // currentQuestion will be automatically computed from vocabularyWords[nextIndex]
@@ -617,6 +627,30 @@ export default function VocabularyLearning() {
                       </div>
                       )
                     })}
+                </div>
+              </div>
+            </div>
+
+            {/* Task 2 Option */}
+            <div className="border-t border-gray-600 pt-4 sm:pt-6">
+              <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-1">Sentence Translation Game</h3>
+                    <p className="text-xs sm:text-sm text-gray-300">Translate English sentences to Indonesian</p>
+                  </div>
+                  <button
+                    onClick={() => setEnableSentenceTranslation(!enableSentenceTranslation)}
+                    className={`relative w-12 h-6 sm:w-14 sm:h-7 rounded-full transition-all duration-300 ${enableSentenceTranslation
+                      ? 'bg-blue-600 border-blue-500'
+                      : 'bg-gray-600 border-gray-500'
+                      } border-2`}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full transition-transform duration-300 ${enableSentenceTranslation
+                      ? 'translate-x-6 sm:translate-x-7'
+                      : 'translate-x-0.5'
+                      }`} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -762,36 +796,38 @@ export default function VocabularyLearning() {
                     />
                   </div>
 
-                  {/* Task 2: Context Translation */}
-                  <div className="bg-gray-900 rounded-xl p-4 sm:p-5 border-2 border-blue-600 shadow-lg shadow-blue-500/20">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <BookOpen className="w-5 h-5" />
-                      <h3 className="text-lg font-bold text-blue-400">Task 2: Terjemahan Kalimat</h3>
-                    </div>
-
-                    <div className="mb-3">
-                      <div className="bg-gray-800 border-2 border-blue-600 rounded-lg p-3 min-h-[60px] flex items-center">
-                        {isLoadingSentence ? (
-                          <div className="flex items-center space-x-2 text-blue-300">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>Generating sentence...</span>
-                          </div>
-                        ) : (
-                          <p className="text-blue-100 text-lg leading-relaxed break-words">
-                            {generatedSentence || 'Memuat kalimat...'}
-                          </p>
-                        )}
+                  {/* Task 2: Context Translation - Only show if enabled */}
+                  {enableSentenceTranslation && (
+                    <div className="bg-gray-900 rounded-xl p-4 sm:p-5 border-2 border-blue-600 shadow-lg shadow-blue-500/20">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <BookOpen className="w-5 h-5" />
+                        <h3 className="text-lg font-bold text-blue-400">Task 2: Terjemahan Kalimat</h3>
                       </div>
-                    </div>
 
-                    <textarea
-                      value={contextInput}
-                      onChange={(e) => setContextInput(e.target.value)}
-                      placeholder="Masukkan terjemahan kalimat..."
-                      rows={3}
-                      className="w-full px-4 py-3 bg-gray-800 border border-blue-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base lg:text-lg resize-none"
-                    />
-                  </div>                  {/* Submit Button */}
+                      <div className="mb-3">
+                        <div className="bg-gray-800 border-2 border-blue-600 rounded-lg p-3 min-h-[60px] flex items-center">
+                          {isLoadingSentence ? (
+                            <div className="flex items-center space-x-2 text-blue-300">
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                              <span>Generating sentence...</span>
+                            </div>
+                          ) : (
+                            <p className="text-blue-100 text-lg leading-relaxed break-words">
+                              {generatedSentence || 'Memuat kalimat...'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <textarea
+                        value={contextInput}
+                        onChange={(e) => setContextInput(e.target.value)}
+                        placeholder="Masukkan terjemahan kalimat..."
+                        rows={3}
+                        className="w-full px-4 py-3 bg-gray-800 border border-blue-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base lg:text-lg resize-none"
+                      />
+                    </div>
+                  )}                  {/* Submit Button */}
                   <button
                     onClick={handleAnswerSubmit}
                     disabled={isSubmitted}
@@ -901,32 +937,34 @@ export default function VocabularyLearning() {
                       </div>
                     </div>
 
-                    {/* Task 2 Answer: Translation */}
-                    <div className="bg-gray-900 rounded-xl p-6 border-2 border-blue-600 shadow-lg shadow-blue-500/20">
-                      <div className="flex items-center space-x-2 mb-4">
-                        <RotateCw className="w-6 h-6" />
-                        <h3 className="text-xl font-bold text-blue-400">Task 2: Terjemahan Kalimat</h3>
-                      </div>
+                    {/* Task 2 Answer: Translation - Only show if enabled */}
+                    {enableSentenceTranslation && (
+                      <div className="bg-gray-900 rounded-xl p-6 border-2 border-blue-600 shadow-lg shadow-blue-500/20">
+                        <div className="flex items-center space-x-2 mb-4">
+                          <RotateCw className="w-6 h-6" />
+                          <h3 className="text-xl font-bold text-blue-400">Task 2: Terjemahan Kalimat</h3>
+                        </div>
 
-                      <div className="bg-gray-800 rounded-lg p-4 border border-blue-600">
-                        <p className="text-sm text-blue-400 mb-3 font-medium flex items-center space-x-2">
-                          <RotateCw className="w-4 h-4" />
-                          <span>Terjemahan Indonesia:</span>
-                        </p>
-                        {isLoadingTranslation ? (
-                          <div className="flex items-center space-x-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <p className="text-blue-300">Menerjemahkan kalimat...</p>
-                          </div>
-                        ) : generatedTranslation ? (
-                          <div className="bg-gray-700 rounded-lg p-4 border-l-4 border-blue-400">
-                            <p className="text-blue-200 leading-relaxed break-words">{generatedTranslation}</p>
-                          </div>
-                        ) : (
-                          <p className="text-blue-300 italic">Sistem sedang menerjemahkan kalimat...</p>
-                        )}
+                        <div className="bg-gray-800 rounded-lg p-4 border border-blue-600">
+                          <p className="text-sm text-blue-400 mb-3 font-medium flex items-center space-x-2">
+                            <RotateCw className="w-4 h-4" />
+                            <span>Terjemahan Indonesia:</span>
+                          </p>
+                          {isLoadingTranslation ? (
+                            <div className="flex items-center space-x-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <p className="text-blue-300">Menerjemahkan kalimat...</p>
+                            </div>
+                          ) : generatedTranslation ? (
+                            <div className="bg-gray-700 rounded-lg p-4 border-l-4 border-blue-400">
+                              <p className="text-blue-200 leading-relaxed break-words">{generatedTranslation}</p>
+                            </div>
+                          ) : (
+                            <p className="text-blue-300 italic">Sistem sedang menerjemahkan kalimat...</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full min-h-[400px]">

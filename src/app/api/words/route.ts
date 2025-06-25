@@ -39,10 +39,9 @@ export async function GET(request: NextRequest) {
       wordsQuery = wordsQuery.or(levelConditions);
     }
     
-    // Get a larger sample and then randomly select from it
-    const sampleSize = Math.min(totalWords || 1000, 1000); // Max 1000 for performance
-    const { data: wordsPool, error: poolError } = await wordsQuery
-      .limit(sampleSize);
+    // Get all words from the database (no artificial limit)
+    // We'll shuffle and select from the full dataset for true randomness
+    const { data: wordsPool, error: poolError } = await wordsQuery;
 
     if (poolError) {
       console.error('Supabase pool error:', poolError);

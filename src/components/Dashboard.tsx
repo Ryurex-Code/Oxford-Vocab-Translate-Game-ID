@@ -298,7 +298,7 @@ export default function Dashboard() {
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    {/* Start Learning */}
+                    {/* Continue Learning Panel */}
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                         <div className="flex items-center space-x-3 mb-4">
                             <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
@@ -306,15 +306,33 @@ export default function Dashboard() {
                             </div>
                             <div>
                                 <h3 className="text-xl font-semibold text-white">Continue Learning</h3>
-                                <p className="text-blue-200">Practice Oxford 5000 vocabulary</p>
+                                <p className="text-blue-200">Choose your learning mode</p>
                             </div>
                         </div>
-                        <button
-                            onClick={handleStartGame}
-                            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105"
-                        >
-                            Start Learning
-                        </button>
+
+                        <div className="space-y-3">
+                            {/* Regular Learning Mode */}
+                            <button
+                                onClick={handleStartGame}
+                                className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center space-x-2"
+                            >
+                                <BookOpen className="h-5 w-5" />
+                                <span>All Vocabulary</span>
+                            </button>
+
+                            {/* Practice Mode */}
+                            <button
+                                onClick={() => router.push('/practice')}
+                                className="w-full py-3 px-4 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center space-x-2"
+                            >
+                                <Target className="h-5 w-5" />
+                                <span>Practice Mode</span>
+                            </button>
+
+                            <p className="text-xs text-blue-300 text-center mt-2">
+                                Practice Mode focuses on words you need to improve
+                            </p>
+                        </div>
                     </div>                    {/* Level Statistics */}
                     <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                         <div className="flex items-center space-x-3 mb-4">
@@ -417,7 +435,7 @@ export default function Dashboard() {
                                 <span className="text-xs text-orange-300 font-normal">(Recent mistakes)</span>
                             </h4><div className="space-y-2 max-h-48 overflow-y-auto">
                                     {progressStats
-                                        .filter(word => word.weight >= 15)
+                                        .filter(word => word.weight >= 10)
                                         .sort((a, b) => new Date(b.last_reviewed_at).getTime() - new Date(a.last_reviewed_at).getTime())
                                         .slice(0, 5)
                                         .map((word, index) => (
@@ -435,7 +453,7 @@ export default function Dashboard() {
                                             </div>
                                         ))
                                     }
-                                    {progressStats.filter(word => word.weight >= 15).length === 0 && (
+                                    {progressStats.filter(word => word.weight >= 10).length === 0 && (
                                         <div className="text-center py-4">
                                             <span className="text-blue-200 text-sm">Great! No difficult words</span>
                                         </div>
